@@ -5,6 +5,7 @@ module) is session 3; this function is what the sandbox will call.
 """
 from __future__ import annotations
 
+import ast
 import json
 import re
 import shutil
@@ -66,10 +67,25 @@ def pick_survivors(names: list[str], k: int) -> list[str]:
     return picked
 
 
-def build_workspace(ws: Path, module_file: Path, tests_dir: Path) -> None:
+def protect_raise_lines(source: str) -> str:
+    """Add `# pragma: no mutate` to every line of every `raise` statement, so mutmut does
+    not mutate exception messages. Message text is rarely in a spec; scoring tests on it
+    rewards pinning implementation details (measured on ratelimiter: 100% vs 72%)."""
+    lines = source.split("\n")
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Raise):
+            for n in range(node.lineno, (node.end_lineno or node.lineno) + 1):
+                if "pragma: no mutate" not in lines[n - 1]:
+                    lines[n - 1] += "  # pragma: no mutate"
+    return "\n".join(lines)
+
+
+def build_workspace(ws: Path, module_file: Path, tests_dir: Path, *,
+                    score_messages: bool = False) -> None:
     """Lay out ws/src/<module>.py, ws/tests/*.py and the pytest + mutmut config."""
     (ws / "src").mkdir(parents=True)
-    shutil.copy(module_file, ws / "src" / module_file.name)
+    src = module_file.read_text()
+    (ws / "src" / module_file.name).write_text(src if score_messages else protect_raise_lines(src))
     shutil.copytree(tests_dir, ws / "tests")
     (ws / "pyproject.toml").write_text(PYPROJECT)
 
@@ -81,11 +97,11 @@ def _run(cmd: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess
 
 
 def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900,
-              max_survivors: int = 5) -> GradeReport:
+              max_survivors: int = 5, score_messages: bool = False) -> GradeReport:
     """Grade `tests_dir` against `module_file`: baseline pytest + coverage, then mutmut."""
     with tempfile.TemporaryDirectory(prefix="mutagent-") as tmp:
         ws = Path(tmp)
-        build_workspace(ws, module_file, tests_dir)
+        build_workspace(ws, module_file, tests_dir, score_messages=score_messages)
 
         base = _run(
             [sys.executable, "-m", "pytest", "--cov=src", "--cov-report=json", "-q"],

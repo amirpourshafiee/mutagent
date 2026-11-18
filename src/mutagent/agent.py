@@ -22,6 +22,8 @@ SYSTEM = (
     "```python block. Import the module by its file name. Use only the standard library "
     "and pytest. Do not read files, use open/exec/eval, or import inspect or mutmut. "
     "Test behavior stated in the spec, with exact expected values, and no sleeping. "
+    "Do not assert exception message text; assert only the exception type unless the spec "
+    "gives the message. "
     "If the code seems to contradict the spec, do not assert the buggy behavior; add a line "
     "'POSSIBLE_BUG: <explanation>' outside the code block."
 )

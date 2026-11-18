@@ -21,3 +21,6 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
 markers = ["slow: runs mutmut or Docker (deselect with -m 'not slow')"]
+
+[tool.ruff]
+extend-exclude = ["bench/results"]

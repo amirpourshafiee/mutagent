@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from mutagent.runner import TestsFailing, build_workspace, pick_survivors, run_grade
+from mutagent.runner import (
+    TestsFailing,
+    build_workspace,
+    pick_survivors,
+    protect_raise_lines,
+    run_grade,
+)
 
 RL = Path(__file__).parent.parent / "bench" / "modules" / "ratelimiter"
 
@@ -22,9 +28,23 @@ def test_pick_survivors_round_robin():
     assert pick_survivors([], 5) == []
 
 
+def test_protect_raise_lines_marks_every_line_of_a_raise():
+    src = "def f(x):\n    if x:\n        raise ValueError(\n            'bad'\n        )\n    return 1\n"
+    out = protect_raise_lines(src)
+    assert out.count("pragma: no mutate") == 3
+    assert "return 1  #" not in out
+    assert protect_raise_lines(out) == out  # idempotent
+
+
 @pytest.mark.slow
-def test_golden_ratelimiter_human_tests():
+def test_golden_ratelimiter_human_tests_spec_scoring():
     rep = run_grade(RL / "src" / "ratelimiter.py", RL / "human_tests")
+    assert (rep.grade.killed, rep.grade.survived) == (29, 2)
+
+
+@pytest.mark.slow
+def test_golden_ratelimiter_human_tests_with_message_mutants():
+    rep = run_grade(RL / "src" / "ratelimiter.py", RL / "human_tests", score_messages=True)
     assert (rep.grade.killed, rep.grade.survived) == (29, 14)
     assert rep.grade.mutation_score == pytest.approx(29 / 43)
     assert rep.tests_passed > 0 and 0 < rep.line_coverage <= 100

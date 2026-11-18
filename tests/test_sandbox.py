@@ -39,7 +39,7 @@ def test_tests_failing_is_raised():
 def test_cli_in_process(capsys):
     assert main([str(MOD), str(TESTS)]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert (data["killed"], data["survived"]) == (29, 14)
+    assert (data["killed"], data["survived"]) == (29, 2)
 
 
 def _docker_ready() -> bool:
@@ -52,4 +52,4 @@ def _docker_ready() -> bool:
 @pytest.mark.skipif(not _docker_ready(), reason="docker not installed or daemon not running")
 def test_docker_golden_matches_host():
     rep = run_grade_docker(MOD, TESTS)
-    assert (rep.grade.killed, rep.grade.survived) == (29, 14)
+    assert (rep.grade.killed, rep.grade.survived) == (29, 2)
