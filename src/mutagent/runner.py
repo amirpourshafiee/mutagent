@@ -116,6 +116,9 @@ def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900,
         )
         m = re.search(r"(\d+) passed", base.stdout)
         passed = int(m.group(1)) if m else 0
+        if passed == 0:  # e.g. the whole module was skipped: exit code 0 but nothing ran
+            raise TestsFailing("no test passed (all skipped, deselected or none collected)\n"
+                               + base.stdout[-1500:])
 
         _run([sys.executable, "-m", "mutmut", "run"], ws, timeout)
         stats = _run([sys.executable, "-m", "mutmut", "export-cicd-stats"], ws, timeout)

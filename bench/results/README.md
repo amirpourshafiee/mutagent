@@ -34,3 +34,22 @@ The agent did NOT beat the human tests except on ratelimiter. Cause analysis, al
 Fixes: repair prompts carry module + spec; improvement rounds return only NEW tests that are
 appended (name collisions renamed); the new score definition. Pilot 2 reruns everything with them.
 File: pilot1_old_agent.json (raw rows, including the generated suites).
+
+## Pilot 2 (2026-11-18, one repeat, agent v2, new score definition)
+
+| Module | B0 human | B2 single shot | B3 coverage agent | B4 full agent |
+|---|---|---|---|---|
+| ratelimiter | 93.5 | 100 | 96.8 | 100 |
+| retrying | 66.0 | 61.0 | 83.5 | 95.7 |
+| schedule | 76.5 | failing (no valid suite) | 78.1 | 95.9 |
+| xmltodict | 87.4 | 65.4 | 84.0 | (invalid, see below) |
+| inflection | 56.2 | 56.4 | 56.4 | 56.9 (module excluded, see bench/excluded) |
+
+Reading, with one run per cell so no significance claims: mutation feedback (B4) beat coverage
+feedback (B3) by 12 and 18 points on retrying and schedule; on xmltodict B3 did not beat the human
+tests. The agent's own notes on retrying call the remaining survivors equivalent mutants.
+
+Two invalid results found: the xmltodict B4 run produced a suite with zero passing tests (module
+skipped), which the grader accepted and scored 0. run_grade now raises TestsFailing when no test
+passes. That row was removed from pilot2.json and needs a rerun. inflection was excluded (import-time
+mutants cannot be killed). Cost of pilot 2: about $4.

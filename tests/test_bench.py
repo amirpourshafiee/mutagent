@@ -15,7 +15,7 @@ def rep(k, s):
 
 def test_discover_finds_modules_with_required_files():
     mods = discover(MODULES)
-    assert {"ratelimiter", "inflection", "retrying", "schedule", "xmltodict"} <= set(mods)
+    assert {"ratelimiter", "retrying", "schedule", "xmltodict"} <= set(mods)
     for info in mods.values():
         assert (info["dir"] / "SPEC.md").is_file() and (info["dir"] / "human_tests").is_dir()
         assert info["license"] in ("MIT", "Apache-2.0")

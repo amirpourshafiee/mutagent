@@ -69,3 +69,13 @@ def test_passed_count_ignores_subtest_summary(tmp_path):
     )
     rep = run_grade(RL / "src" / "ratelimiter.py", t)
     assert rep.tests_passed == 1
+
+
+def test_suite_with_no_passing_test_is_failing_not_graded(tmp_path):
+    t = tmp_path / "tests"
+    t.mkdir()
+    (t / "test_skip.py").write_text(
+        "import pytest\npytest.skip('nothing to see', allow_module_level=True)\n"
+    )
+    with pytest.raises(TestsFailing):
+        run_grade(RL / "src" / "ratelimiter.py", t)
