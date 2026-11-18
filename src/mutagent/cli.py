@@ -18,6 +18,8 @@ def report_to_json(report) -> str:
             "no_tests": report.grade.no_tests,
             "line_coverage": report.line_coverage,
             "tests_passed": report.tests_passed,
+            "missing_lines": list(report.missing_lines),
+            "survivors": [{"name": x.name, "diff": x.diff} for x in report.survivors],
         }
     )
 

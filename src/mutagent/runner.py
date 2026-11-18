@@ -6,6 +6,7 @@ module) is session 3; this function is what the sandbox will call.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -37,10 +38,32 @@ class TestsFailing(Exception):
 
 
 @dataclass(frozen=True)
+class Survivor:
+    name: str
+    diff: str  # unified diff of the mutation that no test caught
+
+
+@dataclass(frozen=True)
 class GradeReport:
     grade: Grade
     line_coverage: float  # percent, 0-100
     tests_passed: int
+    missing_lines: tuple[int, ...] = ()
+    survivors: tuple[Survivor, ...] = ()
+
+
+def pick_survivors(names: list[str], k: int) -> list[str]:
+    """Pick up to k survivor names, round-robin across functions so one function
+    with many survivors does not crowd out the rest."""
+    groups: dict[str, list[str]] = {}
+    for n in names:
+        groups.setdefault(n.rsplit("__mutmut_", 1)[0], []).append(n)
+    picked: list[str] = []
+    while len(picked) < k and any(groups.values()):
+        for g in groups.values():
+            if g and len(picked) < k:
+                picked.append(g.pop(0))
+    return picked
 
 
 def build_workspace(ws: Path, module_file: Path, tests_dir: Path) -> None:
@@ -57,7 +80,8 @@ def _run(cmd: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess
     )
 
 
-def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900) -> GradeReport:
+def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900,
+              max_survivors: int = 5) -> GradeReport:
     """Grade `tests_dir` against `module_file`: baseline pytest + coverage, then mutmut."""
     with tempfile.TemporaryDirectory(prefix="mutagent-") as tmp:
         ws = Path(tmp)
@@ -69,7 +93,11 @@ def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900) -> Grad
         )
         if base.returncode != 0:
             raise TestsFailing(base.stdout + base.stderr)
-        cov = json.loads((ws / "coverage.json").read_text())["totals"]["percent_covered"]
+        cov_data = json.loads((ws / "coverage.json").read_text())
+        cov = cov_data["totals"]["percent_covered"]
+        missing = tuple(
+            n for f in cov_data["files"].values() for n in f.get("missing_lines", [])
+        )
         passed = int(base.stdout.rsplit(" passed", 1)[0].split()[-1])
 
         _run([sys.executable, "-m", "mutmut", "run"], ws, timeout)
@@ -78,4 +106,10 @@ def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900) -> Grad
         if not stats_file.exists():
             raise RuntimeError("mutmut produced no stats:\n" + stats.stdout + stats.stderr)
         grade = grade_from_cicd_stats(json.loads(stats_file.read_text()))
-        return GradeReport(grade=grade, line_coverage=cov, tests_passed=passed)
+        res = _run([sys.executable, "-m", "mutmut", "results"], ws, timeout).stdout
+        names = re.findall(r"^\s*(\S+): survived", res, flags=re.MULTILINE)
+        survivors = []
+        for n in pick_survivors(names, max_survivors):
+            shown = _run([sys.executable, "-m", "mutmut", "show", n], ws, timeout).stdout
+            survivors.append(Survivor(n, shown.split("\n", 1)[-1].strip()))
+        return GradeReport(grade, cov, passed, missing, tuple(survivors))

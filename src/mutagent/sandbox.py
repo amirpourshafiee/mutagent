@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 from mutagent.grading import Grade
-from mutagent.runner import GradeReport, TestsFailing
+from mutagent.runner import GradeReport, Survivor, TestsFailing
 
 IMAGE = "mutagent-grader:latest"
 
@@ -34,6 +34,8 @@ def parse_output(stdout: str) -> GradeReport:
         grade=Grade(data["killed"], data["survived"], data["timeout"], data["no_tests"]),
         line_coverage=data["line_coverage"],
         tests_passed=data["tests_passed"],
+        missing_lines=tuple(data["missing_lines"]),
+        survivors=tuple(Survivor(x["name"], x["diff"]) for x in data["survivors"]),
     )
 
 

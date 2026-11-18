@@ -6,6 +6,7 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.optional-dependencies]
+llm = ["anthropic"]
 dev = ["pytest", "pytest-timeout", "pytest-randomly", "pytest-cov", "mutmut", "ruff"]
 
 [build-system]

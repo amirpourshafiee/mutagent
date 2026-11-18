@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from mutagent.runner import TestsFailing, build_workspace, run_grade
+from mutagent.runner import TestsFailing, build_workspace, pick_survivors, run_grade
 
 RL = Path(__file__).parent.parent / "bench" / "modules" / "ratelimiter"
 
@@ -16,12 +16,19 @@ def test_build_workspace_layout(tmp_path):
     assert "paths_to_mutate" in cfg and "no:randomly" in cfg
 
 
+def test_pick_survivors_round_robin():
+    names = ["a__mutmut_1", "a__mutmut_2", "a__mutmut_3", "b__mutmut_1", "c__mutmut_1"]
+    assert pick_survivors(names, 4) == ["a__mutmut_1", "b__mutmut_1", "c__mutmut_1", "a__mutmut_2"]
+    assert pick_survivors([], 5) == []
+
+
 @pytest.mark.slow
 def test_golden_ratelimiter_human_tests():
     rep = run_grade(RL / "src" / "ratelimiter.py", RL / "human_tests")
     assert (rep.grade.killed, rep.grade.survived) == (29, 14)
     assert rep.grade.mutation_score == pytest.approx(29 / 43)
     assert rep.tests_passed > 0 and 0 < rep.line_coverage <= 100
+    assert len(rep.survivors) == 5 and "@@" in rep.survivors[0].diff
 
 
 @pytest.mark.slow

@@ -7,7 +7,7 @@ import pytest
 
 from mutagent.cli import main, report_to_json
 from mutagent.grading import Grade
-from mutagent.runner import GradeReport, TestsFailing
+from mutagent.runner import GradeReport, Survivor, TestsFailing
 from mutagent.sandbox import docker_command, parse_output, run_grade_docker
 
 RL = Path(__file__).parent.parent / "bench" / "modules" / "ratelimiter"
@@ -25,7 +25,7 @@ def test_command_is_locked_down():
 
 
 def test_report_json_roundtrip():
-    rep = GradeReport(Grade(29, 14, 1, 2), 91.5, 12)
+    rep = GradeReport(Grade(29, 14, 1, 2), 91.5, 12, (3, 4), (Survivor("m_1", "-a\n+b"),))
     assert parse_output("noise\n" + report_to_json(rep)) == rep
 
 
