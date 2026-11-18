@@ -39,7 +39,13 @@ def test_b2_is_single_shot_and_b4_iterates():
 
 def test_keys_and_summary():
     assert make_key("m", "B0", 0, "x") == "m|B0|0|-"
-    res = {"m|B4|0|x": {"score": 0.5}, "m|B4|1|x": {"score": 1.0}, "m|B0|0|-": {"score": 0.8},
-           "m|B2|0|x": {"status": "failing"}}
+    res = {"m|B4|0|x": {"killed": 1, "survived": 1}, "m|B4|1|x": {"killed": 2, "survived": 0},
+           "m|B0|0|-": {"killed": 4, "survived": 1}, "m|B2|0|x": {"status": "failing"}}
     assert summarize(res) == {"m": {"B4": 0.75, "B0": 0.8}}
     json.dumps(res)
+
+
+def test_unreached_mutants_count_against_the_score():
+    assert Grade(killed=5, survived=0, no_tests=5).mutation_score == 0.5
+    assert Grade(killed=5, survived=5, timeout=9).mutation_score == 0.5  # timeouts excluded
+    assert summarize({"m|B0|0|-": {"killed": 5, "survived": 0, "no_tests": 5}}) == {"m": {"B0": 0.5}}

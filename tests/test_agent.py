@@ -1,5 +1,5 @@
 
-from mutagent.agent import extract_bugs, extract_python, run_agent
+from mutagent.agent import extract_bugs, extract_python, merge_tests, run_agent
 from mutagent.grading import Grade
 from mutagent.runner import GradeReport, TestsFailing
 
@@ -130,3 +130,33 @@ def test_no_scored_mutants_counts_as_zero_not_a_crash(tmp_path):
     g = scripted_grader([report(5, 5), GradeReport(Grade(0, 0, timeout=7), 50.0, 1, (), ())])
     res = run_agent(mod, spec, ws, llm, target=1.0, max_rounds=1, grader=g)
     assert res.history == [0.5] and res.best.grade.killed == 5
+
+
+def test_merge_renames_colliding_tests_instead_of_replacing_them():
+    base = "def test_a():\n    assert 1\n"
+    new = "import pytest\n\n\ndef test_a():\n    assert 2\n\n\ndef test_b():\n    pass\n"
+    merged = merge_tests(base, new)
+    ns: dict = {}
+    exec(merged, ns)  # noqa: S102
+    assert {"test_a", "test_a_v2", "test_b"} <= set(ns)
+    assert merge_tests(base, "def broken(:\n").startswith("def test_a")  # syntax error passes through
+
+
+def test_repair_prompt_contains_module_and_spec_and_improvement_appends(tmp_path):
+    mod, spec, ws = make_ws(tmp_path)
+    llm = FakeLLM([block("def test_a(): pass"), block("def test_a(): assert 0"),
+                   block("def test_c(): pass")])
+    g = scripted_grader([report(5, 5), "boom", report(8, 2)])
+    res = run_agent(mod, spec, ws, llm, target=0.8, grader=g)
+    assert res.status == "target_reached"
+    repair = llm.prompts[2]
+    assert "def f():" in repair and "f returns 1" in repair and "boom" in repair
+    final = (ws / "tests" / "test_generated.py").read_text()
+    assert "def test_a()" in final and "def test_c()" in final  # first suite kept, new appended
+
+
+def test_syntax_error_candidate_is_a_repairable_failure(tmp_path):
+    mod, spec, ws = make_ws(tmp_path)
+    llm = FakeLLM([block("def test_a(:\n    pass"), block("def test_a(): pass")])
+    res = run_agent(mod, spec, ws, llm, target=0.5, grader=scripted_grader([report(6, 4)]))
+    assert res.status == "target_reached" and "syntax error" in llm.prompts[1]

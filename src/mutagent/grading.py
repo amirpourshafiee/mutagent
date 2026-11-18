@@ -6,19 +6,22 @@ class Grade:
     killed: int
     survived: int
     timeout: int = 0   # reported separately, never folded into the score
-    no_tests: int = 0  # mutants no test reached
+    no_tests: int = 0  # mutants no test reached; they count as not killed
 
     @property
     def mutation_score(self) -> float:
-        scored = self.killed + self.survived
+        """killed / (killed + survived + no_tests). Mutants no test reaches count against
+        the suite: excluding them let a suite raise its score by leaving code untested
+        (seen in the pilot: more coverage lowered the score). Timeouts stay out of both."""
+        scored = self.killed + self.survived + self.no_tests
         if scored == 0:
             raise ValueError("no scored mutants")
         return self.killed / scored
 
     @property
     def score_or_zero(self) -> float:
-        """Like mutation_score, but 0.0 when nothing was scored (all timeouts or untested)."""
-        scored = self.killed + self.survived
+        """Like mutation_score, but 0.0 when nothing was scored (all timeouts)."""
+        scored = self.killed + self.survived + self.no_tests
         return self.killed / scored if scored else 0.0
 
 

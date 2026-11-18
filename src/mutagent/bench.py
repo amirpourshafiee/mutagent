@@ -16,6 +16,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from mutagent.agent import run_agent
+from mutagent.grading import Grade
 from mutagent.llm import LLM, AnthropicLLM
 from mutagent.runner import TestsFailing, run_grade
 
@@ -76,13 +77,22 @@ def _row(rep, status, rounds, cost, notes, source=None) -> dict:
     return row
 
 
+def row_score(row: dict) -> float | None:
+    """Recompute the score from raw counts so old result files follow the current definition."""
+    if "killed" not in row:
+        return None
+    return Grade(row["killed"], row["survived"], row.get("timeout", 0),
+                 row.get("no_tests", 0)).score_or_zero
+
+
 def summarize(results: dict) -> dict:
-    """Median-free summary: mean score per (module, baseline) across repeats."""
+    """Mean score per (module, baseline) across repeats."""
     table: dict[str, dict[str, list[float]]] = {}
     for key, row in results.items():
         module, baseline, _, _ = key.split("|")
-        if "score" in row:
-            table.setdefault(module, {}).setdefault(baseline, []).append(row["score"])
+        sc = row_score(row)
+        if sc is not None:
+            table.setdefault(module, {}).setdefault(baseline, []).append(sc)
     return {m: {b: round(sum(v) / len(v), 3) for b, v in bs.items()} for m, bs in table.items()}
 
 

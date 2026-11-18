@@ -15,3 +15,22 @@ the first score. The grader now excludes `raise` lines from mutation by default
 (`score_messages=False`), and the agent prompt says not to assert message text.
 Agent run 1 flaky rate over 10 randomized reruns: 0.0.
 Honest read: on this module the agent beats the human tests by about 6 points, not 33.
+
+## Pilot 1 (2026-11-18, one repeat, agent v1) and what it exposed
+
+Scores with the definition in force at the time (unreached mutants excluded):
+B0 / B2 / B3 / B4 -- ratelimiter 94 / 97 / 97 / 100, retrying 66 / 63 / 84 / 64,
+inflection 56 / 56 / 56 / 57, schedule 77 / 74 / 68 / error, xmltodict 87 / 67 / 69 / failing.
+The agent did NOT beat the human tests except on ratelimiter. Cause analysis, all bugs in my harness:
+1. The repair prompt did not include the module or spec, so repairs were blind (xmltodict B4: the
+   model said "no module was provided"; three failed repairs, no suite).
+2. Improvement rounds asked for the whole file back, so the model could drop earlier tests; the strict
+   accept rule then rejected most rounds ("stalled").
+3. Mutants no test reaches were excluded from the score, so covering more code could LOWER it
+   (retrying B2 -> B4). The score is now killed / (killed + survived + no_tests), timeouts excluded.
+   This definition was changed after seeing pilot data, because of that artifact; B0 recomputed:
+   inflection 56.2, retrying 66.0, schedule 76.5, xmltodict 87.4, ratelimiter 93.5.
+4. A candidate with zero scored mutants crashed the run (fixed in the previous commit).
+Fixes: repair prompts carry module + spec; improvement rounds return only NEW tests that are
+appended (name collisions renamed); the new score definition. Pilot 2 reruns everything with them.
+File: pilot1_old_agent.json (raw rows, including the generated suites).
