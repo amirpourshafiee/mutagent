@@ -58,3 +58,14 @@ def test_failing_tests_are_reported_not_graded(tmp_path):
     (bad / "test_bad.py").write_text("def test_x():\n    assert False\n")
     with pytest.raises(TestsFailing):
         run_grade(RL / "src" / "ratelimiter.py", bad)
+
+
+def test_passed_count_ignores_subtest_summary(tmp_path):
+    t = tmp_path / "tests"
+    t.mkdir()
+    (t / "test_sub.py").write_text(
+        "import unittest\n\nclass T(unittest.TestCase):\n    def test_a(self):\n"
+        "        for i in range(3):\n            with self.subTest(i=i):\n                self.assertTrue(i >= 0)\n"
+    )
+    rep = run_grade(RL / "src" / "ratelimiter.py", t)
+    assert rep.tests_passed == 1

@@ -114,7 +114,8 @@ def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900,
         missing = tuple(
             n for f in cov_data["files"].values() for n in f.get("missing_lines", [])
         )
-        passed = int(base.stdout.rsplit(" passed", 1)[0].split()[-1])
+        m = re.search(r"(\d+) passed", base.stdout)
+        passed = int(m.group(1)) if m else 0
 
         _run([sys.executable, "-m", "mutmut", "run"], ws, timeout)
         stats = _run([sys.executable, "-m", "mutmut", "export-cicd-stats"], ws, timeout)

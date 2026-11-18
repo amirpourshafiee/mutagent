@@ -1,0 +1,6 @@
+name: inflection
+group: open_source
+origin: https://github.com/jpvanhal/inflection
+license: MIT
+note: human_tests are the project's own tests (see meta); spec is the README
+edits: none (tests copied as is)

@@ -55,15 +55,17 @@ def draft_prompt(module_src: str, spec: str) -> str:
     return f"SPEC:\n{spec}\n\nMODULE (import it by its file name):\n```python\n{module_src}\n```\n\nWrite the tests."
 
 
-def improve_prompt(module_src: str, spec: str, current: str, rep: GradeReport) -> str:
+def improve_prompt(module_src: str, spec: str, current: str, rep: GradeReport,
+                   use_survivors: bool = True) -> str:
     parts = [
         f"SPEC:\n{spec}", f"MODULE:\n```python\n{module_src}\n```",
         f"CURRENT TESTS (all pass):\n```python\n{current}\n```",
-        f"Mutation score {rep.grade.mutation_score:.0%}, line coverage {rep.line_coverage:.0f}%.",
+        f"Line coverage {rep.line_coverage:.0f}%."
+        + (f" Mutation score {rep.grade.mutation_score:.0%}." if use_survivors else ""),
     ]
     if rep.missing_lines:
         parts.append(f"Lines never executed: {list(rep.missing_lines)}")
-    if rep.survivors:
+    if rep.survivors and use_survivors:
         diffs = "\n\n".join(f"```diff\n{s.diff}\n```" for s in rep.survivors)
         parts.append(
             "These mutations of the module were NOT caught by any test. Add or strengthen "
@@ -95,7 +97,17 @@ def _try(workspace: Path, source: str, module: Path, grader: Grader) -> GradeRep
 def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
               target: float = 0.9, max_rounds: int = 6, stall_after: int = 2,
               repairs: int = 2, budget_usd: float = 2.0,
-              grader: Grader = run_grade) -> AgentResult:
+              grader: Grader = run_grade, feedback: str = "mutation") -> AgentResult:
+    """feedback="mutation": the agent sees surviving mutants and optimizes mutation score.
+    feedback="coverage": baseline B3, sees only uncovered lines and optimizes line coverage
+    (it never sees mutants); the final suite is still graded by mutation score."""
+    if feedback not in ("mutation", "coverage"):
+        raise ValueError(feedback)
+    use_mut = feedback == "mutation"
+
+    def score(r: GradeReport) -> float:
+        return r.grade.mutation_score if use_mut else r.line_coverage / 100
+
     module_src, spec = module.read_text(), spec_file.read_text()
     res = AgentResult("failing", None, None)
 
@@ -124,10 +136,10 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
     if first is None:
         return res
     res.best_source, res.best = first
-    res.history.append(res.best.grade.mutation_score)
+    res.history.append(score(res.best))
     stalled = 0
     for res.rounds in range(1, max_rounds + 1):
-        if res.best.grade.mutation_score >= target:
+        if score(res.best) >= target:
             res.status = "target_reached"
             break
         if llm.cost_usd >= budget_usd:
@@ -136,16 +148,16 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
         if stalled >= stall_after:
             res.status = "stalled"
             break
-        cand = attempt(improve_prompt(module_src, spec, res.best_source, res.best))
-        if cand and cand[1].grade.mutation_score > res.best.grade.mutation_score:
+        cand = attempt(improve_prompt(module_src, spec, res.best_source, res.best, use_mut))
+        if cand and score(cand[1]) > score(res.best):
             res.best_source, res.best = cand
-            res.history.append(res.best.grade.mutation_score)
+            res.history.append(score(res.best))
             stalled = 0
         else:
             stalled += 1
     else:
         res.status = (
-            "target_reached" if res.best.grade.mutation_score >= target else "max_rounds"
+            "target_reached" if score(res.best) >= target else "max_rounds"
         )
     # leave the best passing suite on disk, not the last (possibly rejected) candidate
     write_tests(workspace, TEST_FILE, res.best_source)

@@ -99,3 +99,26 @@ def test_budget_stops_the_loop(tmp_path):
     res = run_agent(mod, spec, ws, llm, target=0.99, budget_usd=0.005,
                     grader=scripted_grader([report(5, 5)]))
     assert res.status == "budget"
+
+
+def test_coverage_feedback_never_shows_mutants_and_optimizes_coverage(tmp_path):
+    mod, spec, ws = make_ws(tmp_path)
+    from mutagent.runner import Survivor
+
+    def rep(cov, killed):
+        return GradeReport(Grade(killed, 10 - killed), cov, 3, (7,), (Survivor("m_1", "SECRET_DIFF"),))
+
+    llm = FakeLLM([block("def test_a(): pass"), block("def test_b(): pass")])
+    res = run_agent(mod, spec, ws, llm, target=1.0, feedback="coverage",
+                    grader=scripted_grader([rep(80.0, 5), rep(100.0, 4)]))
+    assert res.status == "target_reached" and res.history == [0.8, 1.0]
+    assert "SECRET_DIFF" not in llm.prompts[1] and "Mutation score" not in llm.prompts[1]
+    assert res.best.grade.killed == 4  # still graded by mutation, even though it was worse
+
+
+def test_zero_rounds_is_single_shot(tmp_path):
+    mod, spec, ws = make_ws(tmp_path)
+    llm = FakeLLM([block("def test_a(): pass")])
+    res = run_agent(mod, spec, ws, llm, target=1.0, max_rounds=0,
+                    grader=scripted_grader([report(5, 5)]))
+    assert res.rounds == 0 and len(llm.prompts) == 1 and res.status == "max_rounds"

@@ -1,0 +1,6 @@
+name: schedule
+group: open_source
+origin: https://github.com/dbader/schedule
+license: MIT
+note: human_tests are the project's own tests (see meta); spec is the README
+edits: none (tests copied as is; pytz-dependent tests skip if pytz is missing)
