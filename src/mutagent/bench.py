@@ -59,7 +59,8 @@ def run_one(info: dict, baseline: str, llm: LLM | None, grader: Callable = run_g
         else:
             raise ValueError(baseline)
         if res.best is None:
-            return {"status": "failing", "cost_usd": round(res.cost_usd, 4), "notes": res.notes}
+            return {"status": "failing", "cost_usd": round(res.cost_usd, 4), "notes": res.notes,
+                    "last_failure": res.last_failure, "last_candidate": res.last_candidate}
         return _row(res.best, res.status, res.rounds, res.cost_usd, res.notes,
                     source=res.best_source)
 

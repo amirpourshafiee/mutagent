@@ -160,3 +160,10 @@ def test_syntax_error_candidate_is_a_repairable_failure(tmp_path):
     llm = FakeLLM([block("def test_a(:\n    pass"), block("def test_a(): pass")])
     res = run_agent(mod, spec, ws, llm, target=0.5, grader=scripted_grader([report(6, 4)]))
     assert res.status == "target_reached" and "syntax error" in llm.prompts[1]
+
+
+def test_failure_details_are_kept_for_diagnosis(tmp_path):
+    mod, spec, ws = make_ws(tmp_path)
+    llm = FakeLLM([block("def test_a(): assert 0")] * 3)
+    res = run_agent(mod, spec, ws, llm, grader=scripted_grader(["KABOOM"] * 3))
+    assert res.status == "failing" and "KABOOM" in res.last_failure and "test_a" in res.last_candidate

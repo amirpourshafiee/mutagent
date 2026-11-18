@@ -43,6 +43,8 @@ class AgentResult:
     cost_usd: float = 0.0
     notes: list[str] = field(default_factory=list)
     history: list[float] = field(default_factory=list)  # mutation score after each kept round
+    last_failure: str = ""  # most recent pytest/guard output that made a candidate fail
+    last_candidate: str = ""  # the candidate it belonged to
 
 
 def extract_python(text: str) -> str | None:
@@ -162,6 +164,7 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
             out = _try(workspace, src, module, grader)
             if isinstance(out, GradeReport):
                 return src, out
+            res.last_failure, res.last_candidate = out[-1500:], src[:3000]
             prompt = repair_prompt(module_src, spec, block, out, appended=base is not None)
             if llm.cost_usd >= budget_usd:
                 break
