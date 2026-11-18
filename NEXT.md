@@ -1,3 +1,3 @@
-Done: S1 scaffold, grader parse, first benchmark module (ratelimiter: human tests score 29/43 killed).
-Next: S2 grader.run_grade (temp workspace, coverage + mutmut -> Grade JSON), then S3 Docker sandbox.
-Open: pick the other 11 benchmark modules; set the Console spend limit before S5.
+Done: S1 scaffold; S2 grader (mutagent.runner.run_grade: temp workspace, pytest + coverage baseline, mutmut -> GradeReport; golden ratelimiter human tests = 29 killed / 14 survived).
+Next: S3 Docker sandbox (no network, read-only module) wrapping run_grade, then S4 agent loop.
+Open: pick the other 11 benchmark modules; pin Python 3.12 + mutmut 3.8.1 (tested on 3.10 and 3.13).
