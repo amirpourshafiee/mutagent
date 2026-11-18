@@ -1,0 +1,22 @@
+[project]
+name = "mutagent"
+version = "0.1.0"
+description = "LLM test-generation agent graded by mutation testing"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-timeout", "pytest-randomly", "pytest-cov", "mutmut", "ruff"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
+markers = ["slow: runs mutmut or Docker (deselect with -m 'not slow')"]
