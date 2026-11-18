@@ -103,13 +103,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--baselines", nargs="*", default=list(BASELINES))
     p.add_argument("--repeats", type=int, default=3)
     p.add_argument("--model", default="claude-sonnet-5-5")
-    p.add_argument("--max-usd", type=float, default=20.0, help="stop starting runs past this")
+    p.add_argument("--max-usd", type=float, default=20.0,
+                   help="stop starting new runs once THIS invocation has spent this much")
     a = p.parse_args(argv)
 
     mods = discover()
     names = a.modules or list(mods)
     results = json.loads(a.out.read_text()) if a.out.exists() else {}
-    spent = sum(r.get("cost_usd", 0.0) for r in results.values())
+    before = sum(r.get("cost_usd", 0.0) for r in results.values())
+    spent = 0.0  # the cap applies to this invocation only, not to what earlier runs cost
+    print(f"{len(results)} results already in {a.out} (${before:.2f} spent earlier)")
     for name in names:
         for b in a.baselines:
             for rep in range(1 if b == "B0" else a.repeats):
@@ -117,7 +120,7 @@ def main(argv: list[str] | None = None) -> int:
                 if key in results:
                     continue
                 if spent >= a.max_usd:
-                    print(f"budget reached (${spent:.2f}); stopping")
+                    print(f"budget reached (${spent:.2f} this run); stopping")
                     a.out.write_text(json.dumps(results, indent=1))
                     return 1
                 llm = None if b == "B0" else AnthropicLLM(model=a.model)
