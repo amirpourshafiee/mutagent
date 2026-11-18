@@ -1,5 +1,6 @@
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -41,8 +42,14 @@ def test_cli_in_process(capsys):
     assert (data["killed"], data["survived"]) == (29, 14)
 
 
+def _docker_ready() -> bool:
+    if shutil.which("docker") is None:
+        return False
+    return subprocess.run(["docker", "info"], check=False, capture_output=True).returncode == 0
+
+
 @pytest.mark.slow
-@pytest.mark.skipif(shutil.which("docker") is None, reason="docker not installed")
+@pytest.mark.skipif(not _docker_ready(), reason="docker not installed or daemon not running")
 def test_docker_golden_matches_host():
     rep = run_grade_docker(MOD, TESTS)
     assert (rep.grade.killed, rep.grade.survived) == (29, 14)
