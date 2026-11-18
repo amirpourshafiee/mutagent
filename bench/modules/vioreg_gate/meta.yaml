@@ -1,0 +1,6 @@
+name: vioreg_gate
+group: fresh
+origin: vio-regress (own project, private history)
+license: MIT
+target: vioreg/gate.py
+note: human_tests are the project's own tests (written with AI assistance); package mode, only gate.py is mutated

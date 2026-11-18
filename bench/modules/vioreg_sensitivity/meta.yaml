@@ -1,0 +1,6 @@
+name: vioreg_sensitivity
+group: fresh
+origin: vio-regress (own project, private history)
+license: MIT
+target: vioreg/sensitivity.py
+note: human_tests are the project's own tests (written with AI assistance); package mode, only sensitivity.py is mutated

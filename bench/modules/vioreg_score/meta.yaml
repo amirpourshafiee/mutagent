@@ -1,0 +1,6 @@
+name: vioreg_score
+group: fresh
+origin: vio-regress (own project, private history)
+license: MIT
+target: vioreg/score.py
+note: human_tests are the project's own tests (written with AI assistance); package mode, only score.py is mutated

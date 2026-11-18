@@ -1,0 +1,6 @@
+name: vioreg_variance
+group: fresh
+origin: vio-regress (own project, private history)
+license: MIT
+target: vioreg/variance.py
+note: human_tests are the project's own tests (written with AI assistance); package mode, only variance.py is mutated

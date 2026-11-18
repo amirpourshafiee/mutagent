@@ -53,3 +53,15 @@ Two invalid results found: the xmltodict B4 run produced a suite with zero passi
 skipped), which the grader accepted and scored 0. run_grade now raises TestsFailing when no test
 passes. That row was removed from pilot2.json and needs a rerun. inflection was excluded (import-time
 mutants cannot be killed). Cost of pilot 2: about $4.
+
+## B0 for the vioreg modules (own project, package mode), 2026-11-18
+Python 3.12, human tests = the project's own tests (written with AI assistance).
+| Module | killed / survived / unreached | score | line coverage |
+|---|---|---|---|
+| vioreg_gate | 600 / 130 / 11 | 81.0% | 93.3% |
+| vioreg_score | 434 / 209 / 12 | 66.3% | 95.2% |
+| vioreg_sensitivity | 479 / 104 / 550 | 42.3% | 61.3% |
+| vioreg_variance | 296 / 66 / 450 | 36.5% | 52.6% |
+Much of the headroom on variance and sensitivity is unreached code (CLI entry points). The spec for
+each is the module docstring plus its docs page, so the CLI behavior is described to the agent.
+Not yet supported: the Docker sandbox mounts one file, so package mode runs on the host only.

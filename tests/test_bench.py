@@ -15,7 +15,7 @@ def rep(k, s):
 
 def test_discover_finds_modules_with_required_files():
     mods = discover(MODULES)
-    assert {"ratelimiter", "retrying", "schedule", "xmltodict"} <= set(mods)
+    assert {"ratelimiter", "retrying", "schedule", "xmltodict", "vioreg_gate", "vioreg_score"} <= set(mods)
     for info in mods.values():
         assert (info["dir"] / "SPEC.md").is_file() and (info["dir"] / "human_tests").is_dir()
         assert info["license"] in ("MIT", "Apache-2.0")
@@ -49,3 +49,8 @@ def test_unreached_mutants_count_against_the_score():
     assert Grade(killed=5, survived=0, no_tests=5).mutation_score == 0.5
     assert Grade(killed=5, survived=5, timeout=9).mutation_score == 0.5  # timeouts excluded
     assert summarize({"m|B0|0|-": {"killed": 5, "survived": 0, "no_tests": 5}}) == {"m": {"B0": 0.5}}
+
+
+def test_package_modules_resolve_to_their_target_file():
+    info = discover(MODULES)["vioreg_gate"]
+    assert info["module"].name == "gate.py" and (info["module"].parent / "__init__.py").exists()

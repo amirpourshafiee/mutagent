@@ -32,7 +32,8 @@ def discover(modules_dir: Path = MODULES_DIR) -> dict[str, dict]:
             line.split(": ", 1) for line in meta.read_text().splitlines() if ": " in line
         )
         info["dir"] = d
-        info["module"] = next((d / "src").glob("*.py"))
+        info["module"] = (d / "src" / info["target"]) if "target" in info \
+            else next((d / "src").glob("*.py"))
         found[d.name] = info
     return found
 
