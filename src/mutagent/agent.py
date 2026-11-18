@@ -106,7 +106,7 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
     use_mut = feedback == "mutation"
 
     def score(r: GradeReport) -> float:
-        return r.grade.mutation_score if use_mut else r.line_coverage / 100
+        return r.grade.score_or_zero if use_mut else r.line_coverage / 100
 
     module_src, spec = module.read_text(), spec_file.read_text()
     res = AgentResult("failing", None, None)

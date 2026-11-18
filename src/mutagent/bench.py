@@ -67,7 +67,7 @@ def _row(rep, status, rounds, cost, notes, source=None) -> dict:
     row = {
         "killed": rep.grade.killed, "survived": rep.grade.survived,
         "timeout": rep.grade.timeout, "no_tests": rep.grade.no_tests,
-        "score": round(rep.grade.mutation_score, 4),
+        "score": round(rep.grade.score_or_zero, 4),
         "coverage": round(rep.line_coverage, 1), "tests_passed": rep.tests_passed,
         "status": status, "rounds": rounds, "cost_usd": round(cost, 4), "notes": notes,
     }
@@ -115,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
                     row = run_one(mods[name], b, llm)
                 except TestsFailing as e:
                     row = {"status": "tests_failing_on_original", "notes": [e.output[-500:]]}
+                except Exception as e:  # noqa: BLE001 - one bad run must not lose the rest of the benchmark
+                    row = {"status": "error", "notes": [repr(e)[:500]]}
                 results[key] = row
                 spent += row.get("cost_usd", 0.0)
                 a.out.write_text(json.dumps(results, indent=1))

@@ -15,6 +15,12 @@ class Grade:
             raise ValueError("no scored mutants")
         return self.killed / scored
 
+    @property
+    def score_or_zero(self) -> float:
+        """Like mutation_score, but 0.0 when nothing was scored (all timeouts or untested)."""
+        scored = self.killed + self.survived
+        return self.killed / scored if scored else 0.0
+
 
 def flaky_rate(runs: list[dict[str, bool]]) -> float:
     """runs: one dict per rerun, mapping test id -> passed."""

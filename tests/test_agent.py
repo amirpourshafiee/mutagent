@@ -122,3 +122,11 @@ def test_zero_rounds_is_single_shot(tmp_path):
     res = run_agent(mod, spec, ws, llm, target=1.0, max_rounds=0,
                     grader=scripted_grader([report(5, 5)]))
     assert res.rounds == 0 and len(llm.prompts) == 1 and res.status == "max_rounds"
+
+
+def test_no_scored_mutants_counts_as_zero_not_a_crash(tmp_path):
+    mod, spec, ws = make_ws(tmp_path)
+    llm = FakeLLM([block("def test_a(): pass"), block("def test_b(): pass")])
+    g = scripted_grader([report(5, 5), GradeReport(Grade(0, 0, timeout=7), 50.0, 1, (), ())])
+    res = run_agent(mod, spec, ws, llm, target=1.0, max_rounds=1, grader=g)
+    assert res.history == [0.5] and res.best.grade.killed == 5
