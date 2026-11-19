@@ -26,7 +26,7 @@ class AnthropicLLM:
     def __post_init__(self) -> None:
         import anthropic  # optional dependency: pip install -e ".[llm]"
 
-        self._client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
+        self._client = anthropic.Anthropic(max_retries=5, timeout=600.0)  # reads ANTHROPIC_API_KEY
 
     def complete(self, system: str, user: str) -> str:
         msg = self._client.messages.create(

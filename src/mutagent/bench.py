@@ -5,7 +5,8 @@ Baselines (all graded by the same grader, spec scoring):
   B2  single shot: one draft plus repairs, no feedback rounds
   B3  coverage-feedback agent: sees uncovered lines only, optimizes line coverage
   B4  full mutagent: sees surviving mutants, optimizes mutation score
-Runs are resumable: a (module, baseline, repeat) key already in the file is skipped.
+Runs are resumable: a (module, baseline, repeat) key already in the file is skipped,
+except rows that ended in an infrastructure "error" (e.g. API timeout), which are retried.
 """
 from __future__ import annotations
 
@@ -127,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
         for b in a.baselines:
             for rep in range(1 if b == "B0" else a.repeats):
                 key = make_key(name, b, rep, a.model)
-                if key in results:
+                if key in results and results[key].get("status") != "error":
                     continue
                 if spent >= a.max_usd:
                     print(f"budget reached (${spent:.2f} this run); stopping")
