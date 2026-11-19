@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from mutagent.agent import run_agent
+from mutagent.env import describe_environment
 from mutagent.llm import AnthropicLLM
 
 
@@ -20,7 +21,8 @@ def main(argv: list[str] | None = None) -> int:
     a = p.parse_args(argv)
     (a.out / "tests").mkdir(parents=True, exist_ok=True)
     res = run_agent(a.module, a.spec, a.out, AnthropicLLM(model=a.model),
-                    target=a.target, budget_usd=a.budget)
+                    target=a.target, budget_usd=a.budget,
+                    environment=describe_environment(a.module))
     print(json.dumps({"status": res.status, "rounds": res.rounds, "history": res.history,
                       "cost_usd": round(res.cost_usd, 4), "notes": res.notes,
                       "coverage": res.best.line_coverage if res.best else None}, indent=2))

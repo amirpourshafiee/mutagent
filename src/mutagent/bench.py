@@ -16,6 +16,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from mutagent.agent import run_agent
+from mutagent.env import describe_environment
 from mutagent.grading import Grade
 from mutagent.llm import LLM, AnthropicLLM
 from mutagent.runner import TestsFailing, run_grade
@@ -50,7 +51,8 @@ def run_one(info: dict, baseline: str, llm: LLM | None, grader: Callable = run_g
     with tempfile.TemporaryDirectory(prefix="mutagent-bench-") as tmp:
         ws = Path(tmp)
         (ws / "tests").mkdir()
-        kwargs = {"target": 1.0, "budget_usd": 1.0, "grader": grader}
+        kwargs = {"target": 1.0, "budget_usd": 1.0, "grader": grader,
+                  "environment": describe_environment(module)}
         if baseline == "B2":
             res = run_agent(module, spec, ws, llm, max_rounds=0, **kwargs)
         elif baseline == "B3":

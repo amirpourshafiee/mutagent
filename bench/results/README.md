@@ -65,3 +65,14 @@ Python 3.12, human tests = the project's own tests (written with AI assistance).
 Much of the headroom on variance and sensitivity is unreached code (CLI entry points). The spec for
 each is the module docstring plus its docs page, so the CLI behavior is described to the agent.
 Not yet supported: the Docker sandbox mounts one file, so package mode runs on the host only.
+
+## First vioreg attempt (2026-11-18): 12 of 12 runs failed, $2.71 wasted
+Cause: the prompt said "import the module by its file name" and "use only the standard library and
+pytest". vioreg modules need `from vioreg import score` and numpy, so every generated suite failed to
+import. Fix: mutagent.env.describe_environment now tells the model the real import line, the
+installed third-party packages the module uses, and signature stubs of the sibling package modules;
+the prompt carries it in an ENVIRONMENT section. This changed the prompt after looking at the held-out
+modules, but only for interface information (no run produced a score, so no result guided the change).
+Verified offline before spending anything: a stand-in model returning the project's own gate tests
+goes through the whole package-mode pipeline and is graded (501 killed / 192 survived).
+Raw failed rows kept in vioreg_run0_all_failed.json.

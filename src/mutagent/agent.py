@@ -20,8 +20,9 @@ TEST_FILE = "test_generated.py"
 
 SYSTEM = (
     "You write pytest tests for a Python module. Return the COMPLETE test file in one "
-    "```python block. Import the module by its file name. Use only the standard library "
-    "and pytest. Do not read files, use open/exec/eval, or import inspect or mutmut. "
+    "```python block. The ENVIRONMENT section says how to import the module and what you "
+    "may use. Do not read files with open(), use exec/eval, or import inspect or mutmut "
+    "(tmp_path and pathlib write_text are fine). "
     "Test behavior stated in the spec, with exact expected values, and no sleeping. "
     "Do not assert exception message text; assert only the exception type unless the spec "
     "gives the message. "
@@ -56,8 +57,9 @@ def extract_bugs(text: str) -> list[str]:
     return re.findall(r"^POSSIBLE_BUG:\s*(.+)$", text, flags=re.MULTILINE)
 
 
-def draft_prompt(module_src: str, spec: str) -> str:
-    return f"SPEC:\n{spec}\n\nMODULE (import it by its file name):\n```python\n{module_src}\n```\n\nWrite the tests."
+def draft_prompt(module_src: str, spec: str, environment: str = "") -> str:
+    return (f"SPEC:\n{spec}\n\nMODULE:\n```python\n{module_src}\n```\n\n"
+            f"ENVIRONMENT:\n{environment}\n\nWrite the tests.")
 
 
 def merge_tests(base: str, new: str) -> str:
@@ -84,9 +86,10 @@ def merge_tests(base: str, new: str) -> str:
 
 
 def improve_prompt(module_src: str, spec: str, current: str, rep: GradeReport,
-                   use_survivors: bool = True) -> str:
+                   use_survivors: bool = True, environment: str = "") -> str:
     parts = [
         f"SPEC:\n{spec}", f"MODULE:\n```python\n{module_src}\n```",
+        f"ENVIRONMENT:\n{environment}",
         f"CURRENT TESTS (all pass):\n```python\n{current}\n```",
         f"Line coverage {rep.line_coverage:.0f}%."
         + (f" Mutation score {rep.grade.score_or_zero:.0%}." if use_survivors else ""),
@@ -104,11 +107,12 @@ def improve_prompt(module_src: str, spec: str, current: str, rep: GradeReport,
 
 
 def repair_prompt(module_src: str, spec: str, candidate: str, output: str,
-                  appended: bool) -> str:
+                  appended: bool, environment: str = "") -> str:
     what = "These new tests (appended to a passing suite)" if appended else "These tests"
     ask = ("Return ONLY the corrected new test functions." if appended
            else "Return the complete corrected test file.")
     return (f"SPEC:\n{spec}\n\nMODULE:\n```python\n{module_src}\n```\n\n"
+            f"ENVIRONMENT:\n{environment}\n\n"
             f"{what} fail on the original module:\n```python\n{candidate}\n```\n"
             f"pytest output:\n{output[-3000:]}\n\n"
             f"Fix the tests (the module is correct unless the spec says otherwise). {ask}")
@@ -132,7 +136,8 @@ def _try(workspace: Path, source: str, module: Path, grader: Grader) -> GradeRep
 def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
               target: float = 0.9, max_rounds: int = 6, stall_after: int = 2,
               repairs: int = 2, budget_usd: float = 2.0,
-              grader: Grader = run_grade, feedback: str = "mutation") -> AgentResult:
+              grader: Grader = run_grade, feedback: str = "mutation",
+              environment: str = "") -> AgentResult:
     """feedback="mutation": the agent sees surviving mutants and optimizes mutation score.
     feedback="coverage": baseline B3, sees only uncovered lines and optimizes line coverage
     (it never sees mutants); the final suite is still graded by mutation score."""
@@ -165,12 +170,13 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
             if isinstance(out, GradeReport):
                 return src, out
             res.last_failure, res.last_candidate = out[-1500:], src[:3000]
-            prompt = repair_prompt(module_src, spec, block, out, appended=base is not None)
+            prompt = repair_prompt(module_src, spec, block, out, appended=base is not None,
+                                    environment=environment)
             if llm.cost_usd >= budget_usd:
                 break
         return None
 
-    first = attempt(draft_prompt(module_src, spec))
+    first = attempt(draft_prompt(module_src, spec, environment))
     if first is None:
         return res
     res.best_source, res.best = first
@@ -187,7 +193,7 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
             res.status = "stalled"
             break
         cand = attempt(
-            improve_prompt(module_src, spec, res.best_source, res.best, use_mut),
+            improve_prompt(module_src, spec, res.best_source, res.best, use_mut, environment),
             base=res.best_source,
         )
         if cand and score(cand[1]) > score(res.best):
