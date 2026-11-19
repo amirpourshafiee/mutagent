@@ -113,3 +113,28 @@ variance $0.10/$0.41/$0.64, sensitivity $0.22/$0.28/$0.90.
 Readings: B4 > B3 on gate, score, sensitivity with non-overlapping ranges; B3 > B4 on variance,
 also non-overlapping (69.7-71.4 vs 62.4-66.0). n=3 is small, so these are consistent-direction
 observations, not significance tests.
+
+## Dev set, final harness (3 repeats per cell), `dev_final.json`
+
+The dev set is the four modules the harness was tuned on, so it is NOT a held-out result; treat the
+vioreg table above as the headline. Mean mutation score %, population sd:
+
+| module | B0 human | B2 single shot | B3 coverage agent | B4 mutation agent |
+|---|---|---|---|---|
+| ratelimiter | 93.5 | 96.8 (sd 0.0) | 96.8 (n=2 valid, see below) | 100.0 (sd 0.0) |
+| retrying | 66.0 | 73.5 (sd 2.3) | 82.4 (sd 0.3) | 98.5 (sd 1.1) |
+| schedule | 76.5 | 63.3 (sd 7.6) | 81.0 (sd 1.6) | 96.5 (sd 0.4) |
+| xmltodict | 87.4 | 65.8 (sd 1.7) | 84.7 (sd 0.8) | 88.7 (sd 0.8) |
+
+Cost per run (B2/B3/B4): ratelimiter $0.04/$0.05/$0.04, retrying $0.06/$0.10/$0.32,
+schedule $0.16/$0.48/$0.73, xmltodict $0.21/$0.89/$0.71. Dev-set run total $11.35.
+
+Notes:
+- ratelimiter B3 repeat 0 produced no valid suite ("failing", excluded from the mean above, not
+  counted as 0). The agent asserted what the spec says (`tokens()` returns a float) and the code
+  returns an int at capacity because `_refill` uses `min(self.capacity, ...)`. That is a genuine
+  spec/code mismatch in my own fixture, which the agents flagged via POSSIBLE_BUG in several runs.
+- ratelimiter is at the ceiling (96.8 to 100), so it separates nothing.
+- xmltodict: B4 beats B3 by only 4 points and barely beats the human tests (88.7 vs 87.4), the
+  weakest agent result. Human tests are strongest where the project's own suite is mature.
+- schedule and xmltodict: single shot is below the human tests (63.3 vs 76.5, 65.8 vs 87.4).
