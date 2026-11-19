@@ -138,3 +138,25 @@ Notes:
 - xmltodict: B4 beats B3 by only 4 points and barely beats the human tests (88.7 vs 87.4), the
   weakest agent result. Human tests are strongest where the project's own suite is mature.
 - schedule and xmltodict: single shot is below the human tests (63.3 vs 76.5, 65.8 vs 87.4).
+
+## Why B4 trails B3 on vioreg_variance (diagnosed from stored suites, no API spend)
+
+Established:
+- Every B4 run ends with exactly 232 `no_tests` mutants and 75% line coverage. The unexecuted lines
+  (173-214, 259 of variance.py) are one function, `plot_spread`, which imports matplotlib.
+- matplotlib is not installed in the benchmark environment (it is not in the `bench` extra), so the
+  environment note correctly lists it as unavailable. B4's suites cover that function with
+  `pytest.importorskip("matplotlib")`, so those tests skip and the mutants are never run against a test.
+- B3's suites reach 100% line coverage using mocks (`monkeypatch`/`mock`), which executes the plotting
+  lines without matplotlib. B3's rounds were also driven by "uncovered lines", so covering them was its goal.
+- The 232 unreachable mutants are 29% of the 812 total, which alone caps B4's score at 71%. B4 scored 62 to 66.
+
+Not established (would need per-mutant data): which mutants B3 killed versus left alive. If B3's roughly
+240 survivors are mostly the plot mutants, then B3's mocked coverage earned line coverage but few real
+kills there, and the gap on the rest of the module is B4 killing fewer reachable mutants (44 to 73
+survivors among the 580 reachable ones), which is a separate, smaller effect.
+
+Consequence for reading the table: the variance row mixes an environment artifact with a real
+difference. The score gap should not be read as "coverage feedback beats mutation feedback" on this module.
+A supplementary run with matplotlib installed, reported separately and not replacing the numbers above,
+would show whether the gap closes. The held-out numbers above stay as run (environment unchanged).

@@ -36,7 +36,9 @@ and beat coverage feedback on seven of eight.
 **What they do not support:**
 - Three repeats, one model and eight modules is a small study. Standard deviations are in
   `bench/results/README.md`; these are consistent directions, not significance tests.
-- B3 beat B4 on `vioreg_variance` (70.4 vs 63.9, ranges do not overlap). Cause not yet diagnosed.
+- B3 beat B4 on `vioreg_variance` (70.4 vs 63.9, ranges do not overlap). Diagnosed: a plotting
+  function needs matplotlib, which the benchmark environment lacks. B4 skips those tests honestly,
+  leaving 29% of mutants unreachable; B3 reaches them with mocks. See `bench/results/README.md`.
 - On `xmltodict` the agent barely beats a mature human suite (88.7 vs 87.4).
 - A single shot (B2) is often worse than the human tests (`schedule`, `xmltodict`, `vioreg_score`).
   The gain comes from the feedback loop, not from the model alone.
