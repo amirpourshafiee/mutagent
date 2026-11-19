@@ -19,7 +19,7 @@ from mutagent.agent import run_agent
 from mutagent.env import describe_environment
 from mutagent.grading import Grade
 from mutagent.llm import LLM, AnthropicLLM
-from mutagent.runner import TestsFailing, run_grade
+from mutagent.runner import TestsFailing, preflight, run_grade
 
 BASELINES = ("B0", "B2", "B3", "B4")
 MODULES_DIR = Path(__file__).resolve().parents[2] / "bench" / "modules"
@@ -117,7 +117,13 @@ def main(argv: list[str] | None = None) -> int:
     before = sum(r.get("cost_usd", 0.0) for r in results.values())
     spent = 0.0  # the cap applies to this invocation only, not to what earlier runs cost
     print(f"{len(results)} results already in {a.out} (${before:.2f} spent earlier)")
+    bad_streak = 0
     for name in names:
+        problem = preflight(mods[name]["module"], mods[name]["dir"] / "human_tests")
+        if problem:
+            print(f"SKIPPING {name}: its own tests fail in this environment "
+                  f"(missing dependency or wrong Python?). No API calls made.\n{problem[-600:]}")
+            continue
         for b in a.baselines:
             for rep in range(1 if b == "B0" else a.repeats):
                 key = make_key(name, b, rep, a.model)
@@ -135,9 +141,14 @@ def main(argv: list[str] | None = None) -> int:
                 except Exception as e:  # noqa: BLE001 - one bad run must not lose the rest of the benchmark
                     row = {"status": "error", "notes": [repr(e)[:500]]}
                 results[key] = row
+                bad_streak = bad_streak + 1 if "score" not in row else 0
                 spent += row.get("cost_usd", 0.0)
                 a.out.write_text(json.dumps(results, indent=1))
                 print(key, row.get("score"), row.get("status"), f"${spent:.2f} total")
+                if bad_streak >= 3:
+                    print("3 runs in a row produced no score: stopping to avoid wasting money. "
+                          "Inspect last_failure in the results file.")
+                    return 1
     print(json.dumps(summarize(results), indent=1))
     return 0
 

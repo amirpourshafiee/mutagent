@@ -174,3 +174,13 @@ def run_grade(module_file: Path, tests_dir: Path, *, timeout: int = 900,
             shown = _run([sys.executable, "-m", "mutmut", "show", n], ws, timeout).stdout
             survivors.append(Survivor(n, shown.split("\n", 1)[-1].strip()))
         return GradeReport(grade, cov, passed, missing, tuple(survivors))
+
+
+def preflight(module_file: Path, tests_dir: Path, timeout: int = 300) -> str | None:
+    """Cheap environment check before any API spend: do the module's own tests pass here
+    (right Python, dependencies installed)? Returns None if fine, else the failure text."""
+    with tempfile.TemporaryDirectory(prefix="mutagent-pre-") as tmp:
+        ws = Path(tmp)
+        build_workspace(ws, module_file, tests_dir)
+        r = _run([sys.executable, "-m", "pytest", "-q", "-x"], ws, timeout)
+        return None if r.returncode == 0 else (r.stdout + r.stderr)[-1500:]

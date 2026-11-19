@@ -54,3 +54,16 @@ def test_unreached_mutants_count_against_the_score():
 def test_package_modules_resolve_to_their_target_file():
     info = discover(MODULES)["vioreg_gate"]
     assert info["module"].name == "gate.py" and (info["module"].parent / "__init__.py").exists()
+
+
+def test_preflight_catches_a_broken_environment(tmp_path):
+    from mutagent.runner import preflight
+
+    mod = tmp_path / "m.py"
+    mod.write_text("def f():\n    return 1\n")
+    t = tmp_path / "tests"
+    t.mkdir()
+    (t / "test_a.py").write_text("import not_installed_anywhere_xyz\n\ndef test_x():\n    pass\n")
+    assert "not_installed_anywhere_xyz" in preflight(mod, t)
+    (t / "test_a.py").write_text("def test_x():\n    pass\n")
+    assert preflight(mod, t) is None
