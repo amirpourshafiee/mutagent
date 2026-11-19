@@ -160,10 +160,19 @@ def run_agent(module: Path, spec_file: Path, workspace: Path, llm: LLM, *,
     def attempt(prompt: str, base: str | None = None) -> tuple[str, GradeReport] | None:
         """Ask, then give the model `repairs` chances to fix failing tests. With `base`,
         the reply is a block of NEW tests appended to the passing suite `base`."""
+        base_prompt = prompt
         for _ in range(repairs + 1):
             block = ask(prompt)
             if block is None:
-                prompt = "Your reply had no ```python block. Return it in one ```python block."
+                # Keep the full context: a bare "no code block" retry makes the model
+                # answer with placeholder tests because it has no spec or module to look at.
+                cut = getattr(llm, "truncated", False)
+                note = ("Your previous reply was cut off by the length limit, so it had no "
+                        "closed ```python block. Write a MORE COMPACT suite: share helpers "
+                        "and fixtures, use pytest.mark.parametrize, and at most about 35 "
+                        "test functions. " if cut else
+                        "Your previous reply had no ```python block. ")
+                prompt = base_prompt + "\n\n" + note + "Return it in one ```python block."
                 continue
             src = merge_tests(base, block) if base else block
             out = _try(workspace, src, module, grader)

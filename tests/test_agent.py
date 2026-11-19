@@ -167,3 +167,27 @@ def test_failure_details_are_kept_for_diagnosis(tmp_path):
     llm = FakeLLM([block("def test_a(): assert 0")] * 3)
     res = run_agent(mod, spec, ws, llm, grader=scripted_grader(["KABOOM"] * 3))
     assert res.status == "failing" and "KABOOM" in res.last_failure and "test_a" in res.last_candidate
+
+
+def test_truncated_reply_retry_keeps_context(tmp_path):
+    """A reply cut off at max_tokens has no closed code block; the retry must resend the
+    full original prompt (spec and module) plus a compactness request, not a bare nag."""
+    from mutagent.agent import run_agent
+
+    seen = []
+
+    class Cut:
+        truncated = False
+        cost_usd = 0.0
+
+        def complete(self, system, user):
+            seen.append(user)
+            self.truncated = len(seen) == 1
+            return "```python\nimport pytest\ndef test_a():\n    assert" if len(seen) == 1 else "no block"
+
+    mod = tmp_path / "m.py"; mod.write_text("def f():\n    return 1\n")
+    spec = tmp_path / "SPEC.md"; spec.write_text("f returns 1")
+    run_agent(mod, spec, tmp_path / "ws", Cut(), repairs=1, max_rounds=0,
+              grader=lambda *_: (_ for _ in ()).throw(AssertionError("not reached")))
+    assert "f returns 1" in seen[1] and "def f()" in seen[1]
+    assert "cut off" in seen[1] and "COMPACT" in seen[1]

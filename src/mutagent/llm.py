@@ -18,9 +18,10 @@ class LLM(Protocol):
 @dataclass
 class AnthropicLLM:
     model: str = "claude-sonnet-5-5"
-    max_tokens: int = 8000
+    max_tokens: int = 16000
     input_tokens: int = 0
     output_tokens: int = 0
+    truncated: bool = False  # last reply stopped at max_tokens
 
     def __post_init__(self) -> None:
         import anthropic  # optional dependency: pip install -e ".[llm]"
@@ -34,6 +35,7 @@ class AnthropicLLM:
         )
         self.input_tokens += msg.usage.input_tokens
         self.output_tokens += msg.usage.output_tokens
+        self.truncated = msg.stop_reason == "max_tokens"
         return "".join(b.text for b in msg.content if b.type == "text")
 
     @property
