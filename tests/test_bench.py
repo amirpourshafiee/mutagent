@@ -1,0 +1,69 @@
+import json
+from pathlib import Path
+
+from mutagent.bench import discover, make_key, run_one, summarize
+from mutagent.grading import Grade
+from mutagent.runner import GradeReport
+from tests.test_agent import FakeLLM, block, scripted_grader
+
+MODULES = Path(__file__).parent.parent / "bench" / "modules"
+
+
+def rep(k, s):
+    return GradeReport(Grade(k, s), 90.0, 3, (), ())
+
+
+def test_discover_finds_modules_with_required_files():
+    mods = discover(MODULES)
+    assert {"ratelimiter", "retrying", "schedule", "xmltodict", "vioreg_gate", "vioreg_score"} <= set(mods)
+    for info in mods.values():
+        assert (info["dir"] / "SPEC.md").is_file() and (info["dir"] / "human_tests").is_dir()
+        assert info["license"] in ("MIT", "Apache-2.0")
+
+
+def test_b0_uses_human_tests_without_llm():
+    info = discover(MODULES)["ratelimiter"]
+    row = run_one(info, "B0", None, grader=scripted_grader([rep(29, 2)]))
+    assert row["killed"] == 29 and row["cost_usd"] == 0.0
+
+
+def test_b2_is_single_shot_and_b4_iterates():
+    info = discover(MODULES)["ratelimiter"]
+    llm = FakeLLM([block("def test_a(): pass")])
+    b2 = run_one(info, "B2", llm, grader=scripted_grader([rep(5, 5)]))
+    assert b2["rounds"] == 0 and len(llm.prompts) == 1
+    llm = FakeLLM([block("def test_a(): pass"), block("def test_b(): pass")])
+    b4 = run_one(info, "B4", llm, grader=scripted_grader([rep(5, 5), rep(10, 0)]))
+    assert b4["score"] == 1.0 and b4["status"] == "target_reached"
+
+
+def test_keys_and_summary():
+    assert make_key("m", "B0", 0, "x") == "m|B0|0|-"
+    res = {"m|B4|0|x": {"killed": 1, "survived": 1}, "m|B4|1|x": {"killed": 2, "survived": 0},
+           "m|B0|0|-": {"killed": 4, "survived": 1}, "m|B2|0|x": {"status": "failing"}}
+    assert summarize(res) == {"m": {"B4": 0.75, "B0": 0.8}}
+    json.dumps(res)
+
+
+def test_unreached_mutants_count_against_the_score():
+    assert Grade(killed=5, survived=0, no_tests=5).mutation_score == 0.5
+    assert Grade(killed=5, survived=5, timeout=9).mutation_score == 0.5  # timeouts excluded
+    assert summarize({"m|B0|0|-": {"killed": 5, "survived": 0, "no_tests": 5}}) == {"m": {"B0": 0.5}}
+
+
+def test_package_modules_resolve_to_their_target_file():
+    info = discover(MODULES)["vioreg_gate"]
+    assert info["module"].name == "gate.py" and (info["module"].parent / "__init__.py").exists()
+
+
+def test_preflight_catches_a_broken_environment(tmp_path):
+    from mutagent.runner import preflight
+
+    mod = tmp_path / "m.py"
+    mod.write_text("def f():\n    return 1\n")
+    t = tmp_path / "tests"
+    t.mkdir()
+    (t / "test_a.py").write_text("import not_installed_anywhere_xyz\n\ndef test_x():\n    pass\n")
+    assert "not_installed_anywhere_xyz" in preflight(mod, t)
+    (t / "test_a.py").write_text("def test_x():\n    pass\n")
+    assert preflight(mod, t) is None

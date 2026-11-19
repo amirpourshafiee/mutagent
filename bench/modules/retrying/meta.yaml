@@ -1,0 +1,6 @@
+name: retrying
+group: open_source
+origin: https://github.com/rholder/retrying
+license: Apache-2.0
+note: human_tests are the project's own tests (see meta); spec is the README
+edits: none (tests copied as is)

@@ -1,0 +1,67 @@
+{
+ "inflection|B0|0|-": {
+  "killed": 223,
+  "survived": 174,
+  "timeout": 0,
+  "no_tests": 0,
+  "score": 0.5617,
+  "coverage": 98.8,
+  "tests_passed": 455,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "ratelimiter|B0|0|-": {
+  "killed": 29,
+  "survived": 2,
+  "timeout": 0,
+  "no_tests": 0,
+  "score": 0.9355,
+  "coverage": 100.0,
+  "tests_passed": 7,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "retrying|B0|0|-": {
+  "killed": 173,
+  "survived": 88,
+  "timeout": 2,
+  "no_tests": 1,
+  "score": 0.6628,
+  "coverage": 96.2,
+  "tests_passed": 23,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "schedule|B0|0|-": {
+  "killed": 411,
+  "survived": 126,
+  "timeout": 2,
+  "no_tests": 0,
+  "score": 0.7654,
+  "coverage": 94.0,
+  "tests_passed": 40,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "xmltodict|B0|0|-": {
+  "killed": 568,
+  "survived": 82,
+  "timeout": 0,
+  "no_tests": 0,
+  "score": 0.8738,
+  "coverage": 97.7,
+  "tests_passed": 134,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ }
+}

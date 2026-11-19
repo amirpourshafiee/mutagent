@@ -1,0 +1,6 @@
+name: xmltodict
+group: open_source
+origin: https://github.com/martinblech/xmltodict
+license: MIT
+note: human_tests are the project's own tests (see meta); spec is the README
+edits: none (tests dir copied as is)

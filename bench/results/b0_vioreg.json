@@ -1,0 +1,54 @@
+{
+ "vioreg_variance|B0|0|-": {
+  "killed": 296,
+  "survived": 66,
+  "timeout": 0,
+  "no_tests": 450,
+  "score": 0.3645,
+  "coverage": 52.6,
+  "tests_passed": 49,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "vioreg_sensitivity|B0|0|-": {
+  "killed": 479,
+  "survived": 104,
+  "timeout": 0,
+  "no_tests": 550,
+  "score": 0.4228,
+  "coverage": 61.3,
+  "tests_passed": 48,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "vioreg_score|B0|0|-": {
+  "killed": 434,
+  "survived": 209,
+  "timeout": 0,
+  "no_tests": 12,
+  "score": 0.6626,
+  "coverage": 95.2,
+  "tests_passed": 32,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ },
+ "vioreg_gate|B0|0|-": {
+  "killed": 600,
+  "survived": 130,
+  "timeout": 0,
+  "no_tests": 11,
+  "score": 0.8097,
+  "coverage": 93.3,
+  "tests_passed": 75,
+  "status": "n/a",
+  "rounds": 0,
+  "cost_usd": 0.0,
+  "notes": []
+ }
+}

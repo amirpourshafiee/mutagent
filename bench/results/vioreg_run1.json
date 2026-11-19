@@ -1,0 +1,16 @@
+{
+ "vioreg_gate|B2|0|claude-sonnet-5-5": {
+  "status": "failing",
+  "cost_usd": 0.2288,
+  "notes": [],
+  "last_failure": "no test passed (all skipped, deselected or none collected)\ns\nWARNING: Failed to generate report: No data to report.\n\n                                                                         [100%]\n1 skipped in 0.02s\n",
+  "last_candidate": "import pytest\n\n\ndef test_placeholder_awaiting_spec():\n    pytest.skip(\"No module spec or environment was provided; real tests pending.\")\n"
+ },
+ "vioreg_gate|B3|0|claude-sonnet-5-5": {
+  "status": "failing",
+  "cost_usd": 0.2295,
+  "notes": [],
+  "last_failure": "no test passed (all skipped, deselected or none collected)\ns\nWARNING: Failed to generate report: No data to report.\n\n                                                                         [100%]\n1 skipped in 0.02s\n",
+  "last_candidate": "import pytest\n\n# Placeholder: the module under test and its spec were not provided.\n# Once the ENVIRONMENT section (import path, allowed libraries) and the spec\n# are available, replace this with tests that check exact values from the spec.\n\n\n@pytest.mark.skip(reason=\"No module or spec provided yet\")\ndef test_placeholder():\n    pass\n"
+ }
+}
