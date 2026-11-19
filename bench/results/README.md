@@ -76,3 +76,21 @@ modules, but only for interface information (no run produced a score, so no resu
 Verified offline before spending anything: a stand-in model returning the project's own gate tests
 goes through the whole package-mode pipeline and is graded (501 killed / 192 survived).
 Raw failed rows kept in vioreg_run0_all_failed.json.
+
+## Held-out vioreg, run 2 (1 repeat, frozen config, $5.82)
+
+Earlier vioreg attempts (run0, run0b, run1) failed because of harness bugs, not model failures:
+missing numpy in the venv, a prompt that said "stdlib only", and a reply truncated at 8000 output
+tokens whose retry carried no context. Fixed before run 2 (max_tokens 16000, context-keeping retry).
+
+Mutation score (killed / (killed + survived + no_tests)), n=1 per cell, so no variance claims yet:
+
+| module | B0 human | B2 single shot | B3 coverage agent | B4 mutation agent |
+|---|---|---|---|---|
+| vioreg_gate | 81.0 | 82.1 | 88.5 | 97.0 |
+| vioreg_score | 66.3 | 52.5 | 70.1 | 79.6 |
+| vioreg_variance | 36.5 | 37.6 | 71.4 | 62.4 (stalled) |
+| vioreg_sensitivity | 42.3 | 85.0 | 86.1 | 92.8 |
+
+Caveats: B4 beat B3 on 3 of 4 modules but lost on variance; with one run per cell that is not
+distinguishable from noise. "target_reached" for B3 means 100% line coverage, not a mutation target.
