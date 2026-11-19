@@ -21,8 +21,8 @@ report is:
     mutation score = killed / (killed + survived + no_tests)
 
 Mutants with no covering test count against the suite, and timeouts are excluded. This is stricter than
-coverage: in one case (below) a suite reached 100% line coverage and still left a quarter of the
-mutants alive.
+coverage: in one case (below) a suite reached 100% line coverage and still left about 30% of the
+mutants alive (232 to 246 of 812).
 
 ## How the agent works
 
