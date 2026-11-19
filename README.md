@@ -4,6 +4,8 @@ An LLM agent that writes pytest tests for a Python module from its code and a pl
 then improves them using feedback. Quality is judged by mutation testing (mutmut), not line
 coverage: a suite only counts if it catches deliberately broken versions of the code.
 
+Full writeup: [docs/WRITEUP.md](docs/WRITEUP.md) ([PDF](docs/mutagent-writeup.pdf)).
+
 ## Results
 
 Mutation score = killed / (killed + survived + no_tests); timeouts are excluded. Mean of 3 repeats,
